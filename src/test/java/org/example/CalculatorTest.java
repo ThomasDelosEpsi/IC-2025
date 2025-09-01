@@ -11,11 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Calculator JUnit 5 Tests")
 class CalculatorTest {
-    @Test(expected = IllegalArgumentException.class)
-    void testDivIntByZero() {
-        Calculator.divInt(10, 0);
-    }
-
 
     @Test
     @Tag("fast")
@@ -30,8 +25,7 @@ class CalculatorTest {
         assertEquals(x + x, Calculator.add(x,x));
     }
 
-
-@ParameterizedTest
+    @ParameterizedTest
     @CsvSource({
             "1,2,0",
             "9,3,3",
@@ -47,13 +41,13 @@ class CalculatorTest {
         assertThrows(IllegalArgumentException.class, () -> Calculator.divInt(10,0));
     }
 
-@Test
+    @Test
     void testAvecTimeout() {
         assertTimeout(Duration.ofMillis(100), () -> {
             // quick operation under 100ms
             for (int i=0;i<10000;i++) Math.sqrt(i);
         });
-    } 
+    }
 
     @Disabled("À implémenter plus tard")
     @Test
@@ -61,7 +55,7 @@ class CalculatorTest {
         // TODO
     }
 
-@Nested
+    @Nested
     @DisplayName("Division réelle")
     class RealDivision {
         @Test
