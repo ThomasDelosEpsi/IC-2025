@@ -1,35 +1,64 @@
 pipeline {
   agent any
   options { timestamps() }
+
   stages {
     stage('Checkout') { steps { checkout scm } }
+
     stage('Select Maven') {
       steps {
         script {
           if (fileExists('mvnw')) {
             env.MAVEN_CMD = './mvnw'
-            echo "Using Maven Wrapper (mvnw) from repo"
           } else {
-            echo "No mvnw found. Trying Jenkins Maven tool 'm3'..."
-            def mvnHome = tool name: 'm3', type: 'maven'   // doit matcher le nom défini dans Jenkins
+            def mvnHome = tool name: 'm3', type: 'maven'   // ton outil Maven s’appelle 'm3'
             env.PATH = "${mvnHome}/bin:${env.PATH}"
             env.MAVEN_CMD = 'mvn'
-            echo "Using Jenkins Maven tool at: ${mvnHome}"
           }
         }
         sh '${MAVEN_CMD} -v'
       }
     }
-    stage('Build & Test (package)') {
+
+    stage('Build & Unit Tests') {
       steps {
-        sh '${MAVEN_CMD} -B -DskipTests=false clean package'
+        sh '${MAVEN_CMD} -B -DskipTests=false clean verify'
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('sonarqube') {
+          // Propriétés Sonar : soit via sonar-project.properties, soit ici en -D
+          sh '${MAVEN_CMD} -B sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 10, unit: 'MINUTES') {
+          script {
+            def qg = waitForQualityGate()
+            if (qg.status != 'OK') {
+              error "Quality gate failed: ${qg.status}"
+            }
+          }
+        }
+      }
+    }
+
+    stage('Package') {
+      steps {
+        sh '${MAVEN_CMD} -B -DskipTests=false package'
       }
     }
   }
+
   post {
     always {
-      junit 'target/surefire-reports/*.xml'
-      archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful: true, allowEmptyArchive: true
+      junit '**/target/surefire-reports/*.xml'
+      archiveArtifacts artifacts: '**/target/*.jar', onlyIfSuccessful: true, allowEmptyArchive: true
     }
   }
 }
