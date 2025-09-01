@@ -11,7 +11,7 @@ pipeline {
             echo "Using Maven Wrapper (mvnw) from repo"
           } else {
             echo "No mvnw found. Trying Jenkins Maven tool 'm3'..."
-            def mvnHome = tool name: 'm3', type: 'maven'   // <-- doit matcher le nom exact
+            def mvnHome = tool name: 'm3', type: 'maven'   // doit matcher le nom défini dans Jenkins
             env.PATH = "${mvnHome}/bin:${env.PATH}"
             env.MAVEN_CMD = 'mvn'
             echo "Using Jenkins Maven tool at: ${mvnHome}"
@@ -20,14 +20,16 @@ pipeline {
         sh '${MAVEN_CMD} -v'
       }
     }
-    stage('Build & Test') {
-      steps { sh '${MAVEN_CMD} -B clean test' }
+    stage('Build & Test (package)') {
+      steps {
+        sh '${MAVEN_CMD} -B -DskipTests=false clean package'
+      }
     }
   }
   post {
     always {
       junit 'target/surefire-reports/*.xml'
-      archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful: true
+      archiveArtifacts artifacts: 'target/*.jar', onlyIfSuccessful: true, allowEmptyArchive: true
     }
   }
 }
