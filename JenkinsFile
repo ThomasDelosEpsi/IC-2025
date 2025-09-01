@@ -1,8 +1,6 @@
 pipeline {
   agent any
-  options {
-    timestamps()
-  }
+  options { timestamps() }
   stages {
     stage('Checkout') {
       steps {
@@ -12,9 +10,27 @@ pipeline {
     stage('Select Maven') {
       steps {
         script {
-          env.MAVEN_CMD = fileExists('mvnw') ? './mvnw' : 'mvn'
+          if (fileExists('mvnw')) {
+            env.MAVEN_CMD = './mvnw'
+            echo "Using Maven Wrapper (mvnw) from repo"
+          } else {
+            echo "No mvnw found. Trying Jenkins Maven tool 'M3'..."
+            try {
+              def mvnHome = tool name: 'M3', type: 'maven'
+              env.PATH = "${mvnHome}/bin:${env.PATH}"
+              env.MAVEN_CMD = 'mvn'
+              echo "Using Jenkins Maven tool at: ${mvnHome}"
+            } catch (err) {
+              error '''Maven introuvable.
+Solutions:
+  1) Ajouter le Maven Wrapper au repo et committer: .mvn/wrapper, mvnw, mvnw.cmd
+     Exemple (en local): mvn -N org.apache.maven.plugins:maven-wrapper-plugin:3.2.0:wrapper
+  2) OU configurer Jenkins: Manage Jenkins -> Global Tool Configuration -> Maven
+     - Add Maven (Name: M3) + Install automatically (ex: 3.9.x)'''
+            }
+          }
         }
-        sh '${MAVEN_CMD} -v || true'
+        sh '${MAVEN_CMD} -v'
       }
     }
     stage('Build & Test') {
