@@ -11,6 +11,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Calculator JUnit 5 Tests")
 class CalculatorTest {
+    @Test(expected = IllegalArgumentException.class)
+    void testDivIntByZero() {
+        Calculator.divInt(10, 0);
+    }
+
 
     @Test
     @Tag("fast")
