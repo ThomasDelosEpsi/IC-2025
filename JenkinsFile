@@ -2,19 +2,16 @@ pipeline {
   agent any
   options {
     timestamps()
-    ansiColor('xterm')
   }
   stages {
     stage('Checkout') {
       steps {
-        // Full checkout (the Jenkinsfile was fetched via lightweight SCM)
         checkout scm
       }
     }
     stage('Select Maven') {
       steps {
         script {
-          // Prefer Maven Wrapper if present; otherwise fall back to 'mvn' (requires Maven installed on Jenkins)
           env.MAVEN_CMD = fileExists('mvnw') ? './mvnw' : 'mvn'
         }
         sh '${MAVEN_CMD} -v || true'
